@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencatatan Keuangan</title>
+    <style>
+        /* Umum */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f1f1f1;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Judul */
+        h1, h2 {
+            text-align: center;
+            color: #333;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        /* Form */
+        form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 30px;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        input, select, button {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+        }
+
+        input, select {
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        /* Tabel */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 16px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #333;
+        }
+
+        td {
+            color: #666;
+        }
+
+        button.delete, button.edit {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button.delete:hover, button.edit:hover {
+            background-color: #c0392b;
+        }
+
+        /* Efek Hover pada Baris Tabel */
+        tr:hover {
+            background-color: #f9f9f9;
+            transition: background-color 0.3s;
+        }
+
+        /* Responsif */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1, h2 {
+                font-size: 1.5em;
+            }
+
+            table {
+                font-size: 14px;
+            }
+        }
+
+        /* Penanda Pemasukan dan Pengeluaran */
+        .income {
+            color: green;
+            font-weight: bold;
+        }
+
+        .expense {
+            color: red;
+            font-weight: bold;
+        }
+
+        /* Total Pemasukan dan Pengeluaran */
+        .total {
+            font-weight: bold;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+
+        .total .income {
+            color: green;
+        }
+
+        .total .expense {
+            color: red;
+        }
+
+        /* Modal Edit */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 60%;
+            max-width: 400px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Keterangan */
+        .toggle-message {
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: 10px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Pencatatan Keuangan</h1>
+        <form id="financeForm">
+            <label for="description">Deskripsi:</label>
+            <input type="text" id="description" required>
+
+            <label for="amount">Jumlah (Rp):</label>
+            <input type="number" id="amount" required>
+
+            <label for="type">Jenis Transaksi:</label>
+            <select id="type" required>
+                <option value="pemasukan">Pemasukan</option>
+                <option value="pengeluaran">Pengeluaran</option>
+            </select>
+
+            <label for="companyType">Jenis Perusahaan:</label>
+            <select id="companyType" required>
+                <option value="es_wawan">Es Wawan</option>
+                <option value="ppob">PPOB</option>
+            </select>
+
+            <button type="submit">Tambahkan Transaksi</button>
+        </form>
+
+        <h2>Daftar Transaksi</h2>
+        <button id="cekEsWawan">Cek Es Wawan</button>
+        <button id="cekPpob">Cek PPOB</button>
+        <div class="toggle-message" id="toggleMessage"></div>
+
+        <table id="transactionList">
+            <thead>
+                <tr>
+                    <th>Deskripsi</th>
+                    <th>Jumlah (Rp)</th>
+                    <th>Jenis Transaksi & Jenis Perusahaan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data transaksi akan muncul di sini -->
+            </tbody>
+        </table>
+
+        <div class="total">
+            <p>Total Pemasukan: <span id="totalIncome" class="income">Rp 0</span></p>
+            <p>Total Pengeluaran: <span id="totalExpense" class="expense">Rp 0</span></p>
+            <p>Total Selisih: <span id="totalDifference">Rp 0</span></p>
+        </div>
+    </div>
+
+    <!-- Modal untuk Edit -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Transaksi</h2>
+            <form id="editForm">
+                <label for="editDescription">Deskripsi:</label>
+                <input type="text" id="editDescription" required>
+
+                <label for="editAmount">Jumlah (Rp):</label>
+                <input type="number" id="editAmount" required>
+
+                <label for="editType">Jenis Transaksi:</label>
+                <select id="editType" required>
+                    <option value="pemasukan">Pemasukan</option>
+                    <option value="pengeluaran">Pengeluaran</option>
+                </select>
+
+                <label for="editCompanyType">Jenis Perusahaan:</label>
+                <select id="editCompanyType" required>
+                    <option value="es_wawan">Es Wawan</option>
+                    <option value="ppob">PPOB</option>
+                </select>
+
+                <button type="submit">Simpan Perubahan</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+const form = document.getElementById('financeForm');
+const descriptionInput = document.getElementById('description');
+const amountInput = document.getElementById('amount');
+const typeInput = document.getElementById('type');
+const companyTypeInput = document.getElementById('companyType');
+const transactionList = document.getElementById('transactionList').getElementsByTagName('tbody')[0];
+const totalIncomeElement = document.getElementById('totalIncome');
+const totalExpenseElement = document.getElementById('totalExpense');
+const totalDifferenceElement = document.getElementById('totalDifference'); // Element untuk Total Selisih
+const cekEsWawanButton = document.getElementById('cekEsWawan');
+const cekPpobButton = document.getElementById('cekPpob');
+const toggleMessage = document.getElementById('toggleMessage');
+let transactions = [];
+let filteredTransactions = [];
+let currentFilter = null;
+let editingIndex = null; // Index yang sedang diedit
+
+// Fungsi untuk memuat transaksi dari localStorage
+function loadTransactions() {
+    transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    filteredTransactions = transactions;  // Awalnya, tampilkan semua transaksi
+    renderTransactions();
+}
+
+// Fungsi untuk merender transaksi ke tabel
+function renderTransactions() {
+    let totalIncome = 0;
+    let totalExpense = 0;
+    transactionList.innerHTML = '';
+
+    filteredTransactions.forEach((transaction, index) => {
+        const row = transactionList.insertRow();
+        const formattedAmount = formatCurrency(transaction.amount);
+        const transactionTypeClass = transaction.type === 'pemasukan' ? 'income' : (transaction.type === 'pengeluaran' ? 'expense' : '');
+        const dateTime = transaction.time;
+        const description = `${transaction.description} (${transaction.companyType === 'es_wawan' ? 'Es Wawan' : (transaction.companyType === 'ppob' ? 'PPOB' : '')})`;
+
+        // Hitung total pemasukan dan pengeluaran
+        if (transaction.type === 'pemasukan') {
+            totalIncome += transaction.amount;
+        } else {
+            totalExpense += transaction.amount;
+        }
+
+        row.innerHTML = `
+            <td>${description}</td>
+            <td>Rp ${formattedAmount}</td>
+            <td class="${transactionTypeClass}">${transaction.type} <br> ${dateTime}</td>
+            <td>
+                <button class="edit" onclick="startEditing(${index})">Edit</button>
+                <button class="delete" onclick="deleteTransaction(${index})">Hapus</button>
+            </td>
+        `;
+    });
+
+    // Update total pemasukan dan pengeluaran
+    totalIncomeElement.textContent = `Rp ${formatCurrency(totalIncome)}`;
+    totalExpenseElement.textContent = `Rp ${formatCurrency(totalExpense)}`;
+
+    // Hitung total selisih
+    const totalDifference = totalIncome - totalExpense;
+    totalDifferenceElement.textContent = `Rp ${formatCurrency(totalDifference)}`;
+}
+
+// Fungsi untuk format angka uang dengan titik
+function formatCurrency(amount) {
+    return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+// Fungsi untuk menyimpan transaksi ke localStorage
+function saveTransaction(transaction) {
+    transactions.push(transaction);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    loadTransactions();
+}
+
+// Fungsi untuk menghapus transaksi
+function deleteTransaction(index) {
+    transactions.splice(index, 1);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    loadTransactions();
+}
+
+// Fungsi untuk memulai proses editing dan menampilkan modal
+function startEditing(index) {
+    const transaction = transactions[index];
+
+    // Set input fields with transaction data
+    document.getElementById('editDescription').value = transaction.description;
+    document.getElementById('editAmount').value = transaction.amount;
+    document.getElementById('editType').value = transaction.type;
+    document.getElementById('editCompanyType').value = transaction.companyType;
+
+    // Set the editing index
+    editingIndex = index;
+
+    // Show the modal
+    document.getElementById('editModal').style.display = "block";
+}
+
+// Menyembunyikan modal ketika tombol close ditekan
+document.getElementsByClassName('close')[0].onclick = function() {
+    document.getElementById('editModal').style.display = "none";
+}
+
+// Fungsi untuk menangani pengeditan transaksi di dalam modal
+document.getElementById('editForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const description = document.getElementById('editDescription').value;
+    const amount = document.getElementById('editAmount').value;
+    const type = document.getElementById('editType').value;
+    const companyType = document.getElementById('editCompanyType').value;
+    const time = new Date().toLocaleString(); // Ambil waktu saat transaksi diedit
+
+    if (description && amount && type && companyType) {
+        const updatedTransaction = {
+            description: description,
+            amount: parseFloat(amount),
+            type: type,
+            companyType: companyType,
+            time: time // Menambahkan waktu transaksi yang baru
+        };
+
+        // Update transaksi pada index yang sesuai
+        transactions[editingIndex] = updatedTransaction;
+
+        // Simpan kembali ke localStorage setelah diperbarui
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+
+        // Tutup modal setelah transaksi diedit
+        document.getElementById('editModal').style.display = "none";
+
+        // Muat ulang transaksi untuk memperbarui tampilan
+        loadTransactions();
+    }
+});
+
+// Event listener untuk menambah transaksi baru
+form.addEventListener('submit', function(event) {
+    event.preventDefault();
+    
+    const description = descriptionInput.value;
+    const amount = amountInput.value;
+    const type = typeInput.value;
+    const companyType = companyTypeInput.value;
+    const time = new Date().toLocaleString(); // Ambil waktu saat transaksi ditambahkan
+
+    if (description && amount && type && companyType) {
+        const newTransaction = {
+            description: description,
+            amount: parseFloat(amount),
+            type: type,
+            companyType: companyType,
+            time: time // Menambahkan waktu transaksi
+        };
+
+        saveTransaction(newTransaction);
+        
+        // Reset form input
+        descriptionInput.value = '';
+        amountInput.value = '';
+        typeInput.value = 'pemasukan';
+        companyTypeInput.value = 'es_wawan';
+    }
+});
+
+// Fungsi untuk menampilkan data keuangan berdasarkan filter
+cekEsWawanButton.addEventListener('click', function() {
+    if (currentFilter === 'es_wawan') {
+        currentFilter = null;  // Reset filter jika sudah difilter Es Wawan
+        filteredTransactions = transactions;  // Kembali ke semua transaksi
+        toggleMessage.textContent = '';  // Kosongkan keterangan
+    } else {
+        currentFilter = 'es_wawan';  // Aktifkan filter untuk Es Wawan
+        filteredTransactions = transactions.filter(t => t.companyType === 'es_wawan');
+        toggleMessage.textContent = 'Tekan lagi untuk kembali';
+    }
+    renderTransactions();  // Render ulang setelah perubahan filter
+});
+
+cekPpobButton.addEventListener('click', function() {
+    if (currentFilter === 'ppob') {
+        currentFilter = null;  // Reset filter jika sudah difilter PPOB
+        filteredTransactions = transactions;  // Kembali ke semua transaksi
+        toggleMessage.textContent = '';  // Kosongkan keterangan
+    } else {
+        currentFilter = 'ppob';  // Aktifkan filter untuk PPOB
+        filteredTransactions = transactions.filter(t => t.companyType === 'ppob');
+        toggleMessage.textContent = 'Tekan lagi untuk kembali';
+    }
+    renderTransactions();  // Render ulang setelah perubahan filter
+});
+
+// Muat transaksi saat halaman dimuat
+window.onload = loadTransactions;
+    </script>
+</body>
+</html>
